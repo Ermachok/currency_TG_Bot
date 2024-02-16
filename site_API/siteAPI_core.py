@@ -1,5 +1,5 @@
 from settings import SiteSettings
-from site_API.utils.site_api_handler import SiteApiInterface
+from site_API.utils.siteAPI_handler import SiteApiInterface
 
 site = SiteSettings()
 
@@ -10,7 +10,7 @@ headers = {
 }
 
 url = "https://" + site.host_api
-params = {"fragment":"true","json":"true"}
+params = {"from":"EUR","to":"RUB"}
 
 site_api = SiteApiInterface()
 
