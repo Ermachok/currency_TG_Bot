@@ -10,7 +10,6 @@ headers = {
 }
 
 url = "https://" + site.host_api
-params = {"from":"EUR","to":"RUB"}
 
 site_api = SiteApiInterface()
 
