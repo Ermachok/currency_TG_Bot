@@ -9,9 +9,11 @@ currency_list = site_api.get_currency_list()
 response = currency_list(url, headers, timeout=3)
 response = response.json()
 
+db_write(db, History, {'name':'wad', 'from_currency':'awdwd', 'to_currency':'dgdfg'})
+
 course = site_api.get_course()
 
-retrieved = db_read(db, History, History.from_currency, History.to_currency)
+#retrieved = db_read(db, History, History.from_currency, History.to_currency)
 
-for element in retrieved:
-    print(element.currency, element.message)
+#for element in retrieved:
+ #   print(element.currency, element.message)

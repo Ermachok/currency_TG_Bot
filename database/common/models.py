@@ -14,5 +14,6 @@ class ModelBase(pw.Model):
 
 
 class History(ModelBase):
+    name = pw.TextField()
     from_currency = pw.TextField()
     to_currency = pw.TextField()
