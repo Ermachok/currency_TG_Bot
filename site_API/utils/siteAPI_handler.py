@@ -13,7 +13,7 @@ def _make_response(url: str, headers: Dict, timeout: int, params: Dict = None, s
     status_code = response.status_code
 
     if status_code == success:
-        return response
+        return response.json()
 
     return status_code
 
