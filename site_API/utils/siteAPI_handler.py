@@ -28,7 +28,7 @@ def _get_currency_list(url: str,
     return response
 
 
-def _get_course(url: str, headers: Dict, params: Dict, timeout: int, func=_make_response):
+def _get_exchange(url: str, headers: Dict, params: Dict, timeout: int, func=_make_response):
     url = "{0}/{1}".format(url, 'exchange')
 
     querystring = {'from': '{}'.format(params['from']),
@@ -51,12 +51,12 @@ class SiteApiInterface():
 
     @staticmethod
     def get_course():
-        return _get_course
+        return _get_exchange
 
 
 if __name__ == "__main__":
     _make_response()
     _get_currency_list()
-    _get_course()
+    _get_exchange()
 
     SiteApiInterface()

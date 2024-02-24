@@ -194,5 +194,17 @@
   {
     "id": "ZAR",
     "description": "ZAR South Africa, rand"
+  },
+  {
+    "id": "CNH",
+    "description": "CNH offshore market Chinese Yuan "
+  },
+    {
+    "id": "TWD",
+    "description": "TWD New Taiwan dollar"
+  },
+  {
+    "id": "VND",
+    "description": "VND Vietnamese dong"
   }
 ]
