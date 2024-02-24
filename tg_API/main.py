@@ -4,12 +4,13 @@ import telebot
 from telebot import types
 from settings import BotSettings
 from site_API.siteAPI_core import headers, site_api, url
-from tg_API.utils.additional_functions import find_description
+from tg_API.utils.additional_functions import find_description, database_format
 from database.common.models import db, History
 from database.core import crud
 
 
-
+db_write = crud.create()
+db_read = crud.retrieve()
 
 bot_settings = BotSettings()
 bot = telebot.TeleBot(bot_settings.bot_token.get_secret_value())
@@ -81,10 +82,16 @@ def callback_inline(call):
             exchange = site_api.get_course()
             response = exchange(url, headers, user_getExange[call.message.chat.username], timeout=3)
 
-            bot.send_message(call.message.chat.id, "Kurs {}".format(response))
+            bot.send_message(call.message.chat.id, "1 {cur_from} = {rate} {cur_to}".format(
+                                                  cur_from=user_getExange[call.message.chat.username]['from'],
+                                                  rate=response,
+                                                  cur_to=user_getExange[call.message.chat.username]['to']))
 
-            user_getExange[call.message.chat.username] = {'from': None,
-                                                          'to': None}
+            db_write(db, History, database_format(user_name=call.message.chat.username,
+                                                  userBot_data=user_getExange[call.message.chat.username],
+                                                  exchange=response))
+
+            user_getExange[call.message.chat.username] = {'from': None, 'to': None}
 
 
 @bot.message_handler(func=lambda message: True, content_types=['text'])
