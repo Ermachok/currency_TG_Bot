@@ -16,4 +16,5 @@ class History(ModelBase):
     name = pw.TextField()
     from_currency = pw.TextField()
     to_currency = pw.TextField()
-    exchange_rate = pw.TextField()
+    request = pw.TextField()
+    answer = pw.TextField()
