@@ -5,8 +5,6 @@ from telebot import types
 from site_API.siteAPI_core import headers, site_api, url
 
 
-
-
 def find_description(value: AnyStr, key: AnyStr = 'id',
                      description_path: AnyStr = 'tg_API/utils/currencies_descriptions.json'):
     with open(description_path) as currency_descrip_file:
@@ -18,11 +16,14 @@ def find_description(value: AnyStr, key: AnyStr = 'id',
     return '{} no info'.format(value)
 
 
-def database_format(user_name: AnyStr, userBot_data: Dict, exchange: AnyStr) -> Dict:
+def database_format(user_name: AnyStr, request, answer: AnyStr, userBot_data=None) -> Dict:
+    if userBot_data is None:
+        userBot_data = {'from': '', 'to': ''}
     db_dict = {'name': user_name,
+               'request': request,
                'from_currency': userBot_data['from'],
                'to_currency': userBot_data['to'],
-               'answer': exchange
+               'answer': answer
                }
     return db_dict
 
@@ -35,8 +36,7 @@ def make_callback_buttons(response: List, func_name: AnyStr):
 
 
 def high_low_handler(working_cur: AnyStr, currencies_number: int, currencies_list: List,
-                     highest: bool = False, lowest: bool = False) -> AnyStr:
-
+                     highest: bool = False, lowest: bool = False) -> (AnyStr, List):
     currencies_list.remove(working_cur)
     exchange = site_api.get_course()
 
@@ -50,9 +50,9 @@ def high_low_handler(working_cur: AnyStr, currencies_number: int, currencies_lis
     elif lowest:
         result_list = sorted(result_list, key=lambda x: x['exchange_rate'], reverse=True)
 
-    response = '1 {} equals:'.format(working_cur)
+    response_str = '1 {} equals:'.format(working_cur)
     for cur in range(currencies_number):
-        response = response + '\n{} {}'.format(result_list[cur]['exchange_rate'],
-                                               result_list[cur]['currency'])
+        response_str = response_str + '\n{} {}'.format(result_list[cur]['exchange_rate'],
+                                                       result_list[cur]['currency'])
 
-    return response
+    return response_str, result_list[:currencies_number]

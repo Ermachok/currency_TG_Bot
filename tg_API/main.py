@@ -5,9 +5,9 @@ from telebot import types
 from settings import BotSettings
 from site_API.siteAPI_core import headers, site_api, url
 from tg_API.utils.additional_functions import find_description, database_format, make_callback_buttons, high_low_handler
+
 from database.common.models import db, History
 from database.core import crud
-
 
 db_write = crud.create()
 db_read = crud.retrieve()
@@ -59,8 +59,9 @@ def exchangeRate_handler(call, user_getExange):
             cur_to=user_getExange[call.message.chat.username]['to']))
 
         db_write(db, History, database_format(user_name=call.message.chat.username,
+                                              request='get_exchange',
                                               userBot_data=user_getExange[call.message.chat.username],
-                                              exchange=response))
+                                              answer=response))
 
         user_getExange[call.message.chat.username] = {'from': None, 'to': None}
 
@@ -70,8 +71,11 @@ def start_func(message):
     bot.send_message(message.chat.id, text=f'Hello, {message.from_user.username}!'
                                            f'\nI can give you a exchange rates.'
                                            f'\n\nUse command <i>/currencies</i> to see the list of available currencies.'
-                                           f'\nUse command <i>/exchangerate</i> to get the exchange rate.',
-                                           parse_mode='HTML')
+                                           f'\nUse command <i>/exchangerate</i> to get the exchange rate.'
+                                           f'\nUse command <i>/high</i> to get the most valuable currencies relative to chosen one.'
+                                           f'\nUse command <i>/low</i> to get the most valuable currencies relative to chosen one.'
+                                           f'\nUse command <i>/history</i> to see history of your requests.',
+                     parse_mode='HTML')
 
 
 @bot.message_handler(commands=['currencies'])
@@ -80,6 +84,10 @@ def get_currencies_list(message):
     response = currency_list(url, headers, timeout=3)
     answ_message = '\n'.join(find_description(currency) for currency in response)
     bot.send_message(message.chat.id, answ_message)
+
+    db_dict = database_format(user_name=message.from_user.username, request=get_currencies_list.__name__,
+                              answer=response)
+    db_write(db, History, db_dict)
 
 
 @bot.message_handler(commands=['exchangerate'])
@@ -135,6 +143,17 @@ def lower_rates(message):
     lowest = True
 
 
+@bot.message_handler(commands=['history'])
+def history(message):
+    result = db_read(db, History, History.name, History.request, History.created_date).where(
+        History.name == message.from_user.username)
+
+    answer = ''
+    for row in result:
+        answer += '\nDate: {}, User: {}, Request: {}'.format(row.created_date, row.name, row.request)
+    bot.send_message(message.chat.id, answer)
+
+
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
     global user_getExange, ignore_text_messages, working_currency
@@ -143,7 +162,7 @@ def callback_inline(call):
         func_name = json.loads(call.data)['func_name']
         if func_name == 'exchangerate':
             exchangeRate_handler(call, user_getExange)
-        elif func_name == 'high_rates':
+        elif func_name == 'higher_rates':
 
             bot.delete_message(chat_id=call.message.chat.id,
                                message_id=call.message.message_id)
@@ -153,7 +172,7 @@ def callback_inline(call):
 
             ignore_text_messages = False
 
-        elif func_name == 'low_rates':
+        elif func_name == 'lower_rates':
             bot.delete_message(chat_id=call.message.chat.id,
                                message_id=call.message.message_id)
             working_currency = json.loads(call.data)['currency']
@@ -176,10 +195,10 @@ def handle_message(message):
     else:
         ignore_text_messages = True
         currency_list = site_api.get_currency_list()
-        response = currency_list(url, headers, timeout=3)
+        response_currencies = currency_list(url, headers, timeout=3)
 
         try:
-            if int(message.text) > len(response):
+            if int(message.text) > len(response_currencies):
                 bot.send_message(message.chat.id, 'Wrong format (number too big)')
             else:
                 bot.send_chat_action(message.chat.id, 'typing')
@@ -188,18 +207,27 @@ def handle_message(message):
                 is_working = True
 
                 if highest:
-                    response = high_low_handler(working_currency, int(message.text), response, highest=True)
+                    response_str, response_list = high_low_handler(working_currency, int(message.text),
+                                                                   response_currencies, highest=True)
+                    db_dict = database_format(user_name=message.from_user.username,
+                                              request='get_highest', answer=response_list)
+                    db_write(db, History, db_dict)
                     highest = False
-                elif lowest:
-                    response = high_low_handler(working_currency, int(message.text), response, lowest=True)
-                    lowest = False
+                    bot.send_message(message.chat.id, response_str)
 
-                bot.send_message(message.chat.id, response)
+                elif lowest:
+                    response_str, response_list = high_low_handler(working_currency, int(message.text),
+                                                                   response_currencies, lowest=True)
+                    lowest = False
+                    db_dict = database_format(user_name=message.from_user.username,
+                                              request='get_lowest', answer=response_list)
+                    db_write(db, History, db_dict)
+                    bot.send_message(message.chat.id, response_str)
+
                 is_working = False
 
         except Exception:
             bot.send_message(message.chat.id, 'Wrong format. Start again')
-
 
 
 def run_bot():
