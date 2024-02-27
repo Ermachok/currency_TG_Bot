@@ -1,4 +1,5 @@
 import json
+from typing import Dict
 
 import telebot
 from telebot import types
@@ -25,7 +26,14 @@ highest = False
 lowest = False
 
 
-def exchangeRate_handler(call, user_getExange):
+def exchangeRate_handler(call, user_getExange: Dict) -> None:
+    """
+    Handle exchangerate callback button.
+
+    :param call: call from callback button in chat
+    :param user_getExange: dict with keys "from" and 'to', values - currencies
+    :return: none
+    """
     current_currency = json.loads(call.data)['currency']
     if user_getExange[call.message.chat.username]['from'] is None:
         user_getExange[call.message.chat.username]['from'] = current_currency
@@ -92,6 +100,11 @@ def get_currencies_list(message):
 
 @bot.message_handler(commands=['exchangerate'])
 def exchangerate(message):
+    """
+    Handle exchangerate command
+    :param message: message from telegram api
+    :return:
+    """
     global user_getExange
     user_getExange[message.from_user.username] = {'from': None,
                                                   'to': None}
@@ -109,6 +122,11 @@ def exchangerate(message):
 
 @bot.message_handler(commands=['high'])
 def higher_rates(message):
+    """
+    Handles high command, provides chosen number of the most valuable currencies relative to chosen one
+    :param message:
+    :return:
+    """
     global highest
 
     currencies_list = site_api.get_currency_list()
@@ -127,6 +145,11 @@ def higher_rates(message):
 
 @bot.message_handler(commands=['low'])
 def lower_rates(message):
+    """
+    Handles low command, provides chosen number of less valuable currencies relative to chosen one
+    :param message:
+    :return:
+    """
     global lowest
 
     currencies_list = site_api.get_currency_list()
@@ -145,6 +168,11 @@ def lower_rates(message):
 
 @bot.message_handler(commands=['history'])
 def history(message):
+    """
+    Handle command history, sends history of requests of user to chat
+    :param message:
+    :return:
+    """
     result = db_read(db, History, History.name, History.request, History.created_date).where(
         History.name == message.from_user.username)
 
@@ -156,6 +184,11 @@ def history(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
+    """
+    Handles InlineKeyboardButtons pressing
+    :param call:
+    :return:
+    """
     global user_getExange, ignore_text_messages, working_currency
 
     if call.message:
@@ -184,6 +217,11 @@ def callback_inline(call):
 
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def handle_message(message):
+    """
+    Handles number from user during request of number of currencies
+    :param message:
+    :return:
+    """
     global highest, lowest, is_working, working_currency, ignore_text_messages
 
     if is_working:
