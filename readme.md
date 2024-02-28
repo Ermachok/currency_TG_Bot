@@ -23,7 +23,7 @@ history - history of user's requests
 ## How to run a bot locally
 
 1. Install the required dependencies by running the command `pip install -r requirements.txt`.
-2. Launch the bot by running the command `python bot.py`.
+2. Launch the bot by running the command `main.py`.
 3. The bot will be available at `https://t.me/CurSkilBot` in Telegram.
 
 ### Additional Information
