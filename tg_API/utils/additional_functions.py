@@ -86,5 +86,3 @@ def high_low_handler(working_cur: AnyStr, currencies_number: int, currencies_lis
                                                        result_list[cur]['currency'])
 
     return response_str, result_list[:currencies_number]
-
-

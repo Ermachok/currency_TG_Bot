@@ -14,7 +14,7 @@ currencies - gives you list of available currencies
 
 exchangerate - gives you exchange rate of 2 currencies(equal to custom)
 
-high - gives most  expensive сurrencies relatively to chosen
+high - gives most expensive сurrencies relatively to chosen
 
 low - gives most cheap currencies relatively to chosen
 

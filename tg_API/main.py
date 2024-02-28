@@ -10,26 +10,20 @@ from tg_API.utils.additional_functions import find_description, database_format,
 from database.common.models import db, History
 from database.core import crud
 
+from tg_API.utils.flags import BotFlags
+
 db_write = crud.create()
 db_read = crud.retrieve()
 
 bot_settings = BotSettings()
 bot = telebot.TeleBot(bot_settings.bot_token.get_secret_value())
 
-user_getExange = {}
-working_currency = ''
-
-ignore_text_messages = True
-is_working = False
-
-highest = False
-lowest = False
+bot_flags = BotFlags()
 
 
-def exchangeRate_handler(call, user_getExange: Dict) -> None:
+def exchangeRate_handler(call: types.CallbackQuery, user_getExange: Dict) -> None:
     """
     Handle exchangerate callback button.
-
     :param call: call from callback button in chat
     :param user_getExange: dict with keys "from" and 'to', values - currencies
     :return: none
@@ -75,7 +69,12 @@ def exchangeRate_handler(call, user_getExange: Dict) -> None:
 
 
 @bot.message_handler(commands=['start'])
-def start_func(message):
+def start_func(message: types.Message) -> None:
+    """
+    Handles command start, sends list of available commands
+    :param message: message from telegram api
+    :return:
+    """
     bot.send_message(message.chat.id, text=f'Hello, {message.from_user.username}!'
                                            f'\nI can give you a exchange rates.'
                                            f'\n\nUse command <i>/currencies</i> to see the list of available currencies.'
@@ -87,7 +86,12 @@ def start_func(message):
 
 
 @bot.message_handler(commands=['currencies'])
-def get_currencies_list(message):
+def get_currencies_list(message: types.Message) -> None:
+    """
+    Handles command "currencies" and gives list of available ones
+    :param message: message from telegram api
+    :return:
+    """
     currency_list = site_api.get_currency_list()
     response = currency_list(url, headers, timeout=3)
     answ_message = '\n'.join(find_description(currency) for currency in response)
@@ -99,15 +103,15 @@ def get_currencies_list(message):
 
 
 @bot.message_handler(commands=['exchangerate'])
-def exchangerate(message):
+def exchangerate(message: types.Message) -> None:
     """
     Handle exchangerate command
     :param message: message from telegram api
     :return:
     """
-    global user_getExange
-    user_getExange[message.from_user.username] = {'from': None,
-                                                  'to': None}
+
+    bot_flags.user_getExange[message.from_user.username] = {'from': None,
+                                                            'to': None}
 
     currencies_list = site_api.get_currency_list()
     response = currencies_list(url, headers, timeout=3)
@@ -121,13 +125,12 @@ def exchangerate(message):
 
 
 @bot.message_handler(commands=['high'])
-def higher_rates(message):
+def higher_rates(message: types.Message) -> None:
     """
     Handles high command, provides chosen number of the most valuable currencies relative to chosen one
     :param message:
     :return:
     """
-    global highest
 
     currencies_list = site_api.get_currency_list()
     response = currencies_list(url, headers, timeout=3)
@@ -140,17 +143,16 @@ def higher_rates(message):
     bot.send_message(message.chat.id, "This command allows you to see "
                                       "the most valuable  currencies in relation to the selected one"
                                       "\nChoose currency from table below", reply_markup=keyboard)
-    highest = True
+    bot_flags.highest = True
 
 
 @bot.message_handler(commands=['low'])
-def lower_rates(message):
+def lower_rates(message: types.Message) -> None:
     """
     Handles low command, provides chosen number of less valuable currencies relative to chosen one
-    :param message:
+    :param message: message from telegram api
     :return:
     """
-    global lowest
 
     currencies_list = site_api.get_currency_list()
     response = currencies_list(url, headers, timeout=3)
@@ -163,14 +165,14 @@ def lower_rates(message):
     bot.send_message(message.chat.id, "This command allows you to see "
                                       "the less valuable  currencies in relation to the selected one"
                                       "\nChoose currency from table below", reply_markup=keyboard)
-    lowest = True
+    bot_flags.lowest = True
 
 
 @bot.message_handler(commands=['history'])
-def history(message):
+def history(message: types.Message) -> None:
     """
     Handle command history, sends history of requests of user to chat
-    :param message:
+    :param message: message from telegram api
     :return:
     """
     result = db_read(db, History, History.name, History.request, History.created_date).where(
@@ -183,55 +185,54 @@ def history(message):
 
 
 @bot.callback_query_handler(func=lambda call: True)
-def callback_inline(call):
+def callback_inline(call: types.CallbackQuery) -> None:
     """
     Handles InlineKeyboardButtons pressing
-    :param call:
+    :param call: call from  InlineKeyboardButton in chat
     :return:
     """
-    global user_getExange, ignore_text_messages, working_currency
+    # global user_getExange, ignore_text_messages, working_currency
 
     if call.message:
         func_name = json.loads(call.data)['func_name']
         if func_name == 'exchangerate':
-            exchangeRate_handler(call, user_getExange)
+            exchangeRate_handler(call, bot_flags.user_getExange)
         elif func_name == 'higher_rates':
 
             bot.delete_message(chat_id=call.message.chat.id,
                                message_id=call.message.message_id)
-            working_currency = json.loads(call.data)['currency']
-            bot.send_message(call.message.chat.id, "You've chosen {}".format(working_currency))
+            bot_flags.working_currency = json.loads(call.data)['currency']
+            bot.send_message(call.message.chat.id, "You've chosen {}".format(bot_flags.working_currency))
             bot.send_message(call.message.chat.id, "Send number of compared currencies (number < 19)")
 
-            ignore_text_messages = False
+            bot_flags.ignore_text_messages = False
 
         elif func_name == 'lower_rates':
             bot.delete_message(chat_id=call.message.chat.id,
                                message_id=call.message.message_id)
-            working_currency = json.loads(call.data)['currency']
-            bot.send_message(call.message.chat.id, "You've chosen {}".format(working_currency))
+            bot_flags.working_currency = json.loads(call.data)['currency']
+            bot.send_message(call.message.chat.id, "You've chosen {}".format(bot_flags.working_currency))
             bot.send_message(call.message.chat.id, "Send number of compared currencies (number < 19)")
 
-            ignore_text_messages = False
+            bot_flags.ignore_text_messages = False
 
 
 @bot.message_handler(func=lambda message: True, content_types=['text'])
-def handle_message(message):
+def handle_message(message: types.Message) -> None:
     """
     Handles number from user during request of number of currencies
-    :param message:
+    :param message: message from telegram api
     :return:
     """
-    global highest, lowest, is_working, working_currency, ignore_text_messages
 
-    if is_working:
+    if bot_flags.is_working:
         bot.reply_to(message, 'Busy at this moment')
         return
 
-    if ignore_text_messages:
+    if bot_flags.ignore_text_messages:
         bot.send_message(message.chat.id, "Use commands to interact with the bot")
     else:
-        ignore_text_messages = True
+        bot_flags.ignore_text_messages = True
         currency_list = site_api.get_currency_list()
         response_currencies = currency_list(url, headers, timeout=3)
 
@@ -242,27 +243,27 @@ def handle_message(message):
                 bot.send_chat_action(message.chat.id, 'typing')
                 bot.reply_to(message, "Working on it...")
 
-                is_working = True
+                bot_flags.is_working = True
 
-                if highest:
-                    response_str, response_list = high_low_handler(working_currency, int(message.text),
+                if bot_flags.highest:
+                    response_str, response_list = high_low_handler(bot_flags.working_currency, int(message.text),
                                                                    response_currencies, highest=True)
                     db_dict = database_format(user_name=message.from_user.username,
                                               request='get_highest', answer=response_list)
                     db_write(db, History, db_dict)
-                    highest = False
+                    bot_flags.highest = False
                     bot.send_message(message.chat.id, response_str)
 
-                elif lowest:
-                    response_str, response_list = high_low_handler(working_currency, int(message.text),
+                elif bot_flags.lowest:
+                    response_str, response_list = high_low_handler(bot_flags.working_currency, int(message.text),
                                                                    response_currencies, lowest=True)
-                    lowest = False
+                    bot_flags.lowest = False
                     db_dict = database_format(user_name=message.from_user.username,
                                               request='get_lowest', answer=response_list)
                     db_write(db, History, db_dict)
                     bot.send_message(message.chat.id, response_str)
 
-                is_working = False
+                bot_flags.is_working = False
 
         except Exception:
             bot.send_message(message.chat.id, 'Wrong format. Start again')

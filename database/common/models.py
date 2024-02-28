@@ -13,6 +13,9 @@ class ModelBase(pw.Model):
 
 
 class History(ModelBase):
+    """
+    attributes - columns in database
+    """
     name = pw.TextField()
     request = pw.TextField()
     from_currency = pw.TextField()

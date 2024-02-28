@@ -13,4 +13,3 @@ class SiteSettings(BaseSettings):
 
 class BotSettings(BaseSettings):
     bot_token: SecretStr = os.getenv("BOT_TOKEN", None)
-

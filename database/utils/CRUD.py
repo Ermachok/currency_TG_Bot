@@ -10,7 +10,7 @@ T = TypeVar("T")
 
 def _store_date(db: db, model: T, *data: List[Dict]) -> None:
     """
-
+    Stores data to db
     :param db: database
     :param model: used model (for example History)
     :param data: data to store
@@ -22,7 +22,7 @@ def _store_date(db: db, model: T, *data: List[Dict]) -> None:
 
 def _retrieve_all_data(db: db, model: T, *columns: ModelBase) -> ModelSelect:
     """
-
+    Gives columns from db
     :param db: database
     :param model: used model (for example History)
     :param columns: columns to retrive
@@ -44,7 +44,7 @@ class CRUDInteface():
         return _retrieve_all_data
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     _store_date()
     _retrieve_all_data()
     CRUDInteface()
